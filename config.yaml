@@ -1,0 +1,74 @@
+project:
+  name: "NetFault-AI"
+  description: "AI-Based Intelligent Network Equipment Fault Prediction Framework"
+  version: "1.0.0"
+
+network_topology:
+  nodes:
+    - id: "CR-01"
+      role: "Core Router"
+      ip: "10.0.0.1"
+      interfaces: ["HundredGigE1/0/1", "HundredGigE1/0/2", "TenGigE0/0/1"]
+      hardware: "Cisco NCS-5500"
+    - id: "CR-02"
+      role: "Core Router"
+      ip: "10.0.0.2"
+      interfaces: ["HundredGigE1/0/1", "HundredGigE1/0/2", "TenGigE0/0/1"]
+      hardware: "Cisco NCS-5500"
+    - id: "SPINE-01"
+      role: "Spine Switch"
+      ip: "10.0.1.1"
+      interfaces: ["HundredGigE1/1/1", "FortyGigE1/2/1", "TenGigE0/1/1"]
+      hardware: "Arista 7050X3"
+    - id: "SPINE-02"
+      role: "Spine Switch"
+      ip: "10.0.1.2"
+      interfaces: ["HundredGigE1/1/1", "FortyGigE1/2/1", "TenGigE0/1/1"]
+      hardware: "Arista 7050X3"
+    - id: "LEAF-01"
+      role: "Leaf Switch"
+      ip: "10.0.2.1"
+      interfaces: ["TenGigE0/1/1", "TenGigE0/1/2", "GigabitEthernet0/0/1"]
+      hardware: "Juniper QFX5120"
+    - id: "LEAF-02"
+      role: "Leaf Switch"
+      ip: "10.0.2.2"
+      interfaces: ["TenGigE0/1/1", "TenGigE0/1/2", "GigabitEthernet0/0/1"]
+      hardware: "Juniper QFX5120"
+    - id: "EDGE-GW-01"
+      role: "Edge Gateway"
+      ip: "10.0.3.1"
+      interfaces: ["GigabitEthernet0/0/1", "GigabitEthernet0/0/2"]
+      hardware: "Fortinet FortiGate 600E"
+
+simulation:
+  time_step_seconds: 30
+  duration_hours: 24
+  random_seed: 42
+  fault_probability_per_window: 0.18
+  lead_time_minutes: 30 # Lead time before catastrophic breakdown to label as 'Impending_Failure'
+
+preprocessing:
+  window_size_steps: 10 # 5 minutes at 30s per step
+  lag_steps: [1, 3, 5]
+  feature_scaling: "robust" # robust / standard
+  log_tfidf_features: 25
+
+models:
+  target_column: "fault_impending" # Binary: 0=Normal, 1=Impending Failure
+  multi_class_target: "fault_type" # Multiclass fault taxonomy
+  test_size: 0.20
+  cv_folds: 5
+  models_to_train:
+    - "RandomForest"
+    - "HistGradientBoosting"
+    - "LogisticRegression"
+    - "IsolationForest" # Unsupervised anomaly detector
+
+paths:
+  raw_logs: "data/raw/syslog_events.jsonl"
+  raw_snmp: "data/raw/snmp_telemetry.csv"
+  raw_metrics: "data/raw/performance_metrics.csv"
+  processed_dataset: "data/processed/fused_features.csv"
+  model_save_dir: "models"
+  reports_dir: "reports"

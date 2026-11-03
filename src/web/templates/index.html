@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NetFault-AI: Intelligent Network Fault Prediction Framework</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="top-nav">
+    <div class="brand">
+      <div class="logo-pulse"></div>
+      <div class="brand-text">
+        <h1>NetFault-AI <span class="badge-version">v1.0.0</span></h1>
+        <p class="subtitle">AI-Based Intelligent Network Equipment Failure Prediction Engine</p>
+      </div>
+    </div>
+    <div class="nav-controls">
+      <div class="live-status">
+        <span class="live-dot"></span>
+        <span id="live-status-text">TELEMETRY STREAM: ACTIVE</span>
+      </div>
+      <button id="btn-pause-stream" class="btn btn-secondary" onclick="toggleStream()">Pause Stream</button>
+      <button class="btn btn-primary" onclick="openInjectionModal()">+ Inject Fault Scenario</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-grid">
+    <!-- Row 1: KPI Summary Cards -->
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-title">MONITORED NODES</div>
+        <div class="kpi-value" id="kpi-node-count">7 / 7 Active</div>
+        <div class="kpi-caption">Core, Spine, Leaf & Edge Gateway</div>
+      </div>
+      <div class="kpi-card" id="kpi-risk-card">
+        <div class="kpi-title">MAX PREDICTED RISK</div>
+        <div class="kpi-value risk-normal" id="kpi-max-risk">5.2% (LOW)</div>
+        <div class="kpi-caption" id="kpi-risk-node">All hardware parameters nominal</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">ACTIVE AI ALERTS</div>
+        <div class="kpi-value" id="kpi-alert-count">0 Impending</div>
+        <div class="kpi-caption">Lead Time Window: ~30 mins</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">MODEL ACCURACY / ROC-AUC</div>
+        <div class="kpi-value" id="kpi-model-auc">98.4% AUC</div>
+        <div class="kpi-caption">Ensemble Random Forest & Gradient Boost</div>
+      </div>
+    </section>
+
+    <!-- Row 2: Topology Map & Live AI Diagnostics -->
+    <section class="panel-row">
+      <!-- Topology Panel -->
+      <div class="panel topology-panel">
+        <div class="panel-header">
+          <h3>Network Topology & Equipment Health</h3>
+          <span class="panel-tag">Interactive Topology</span>
+        </div>
+        <div class="panel-body">
+          <div id="topology-container" class="topology-grid">
+            <!-- Node cards dynamically inserted here -->
+          </div>
+          <div class="topology-legend">
+            <span><span class="dot dot-green"></span> Healthy Normal</span>
+            <span><span class="dot dot-yellow"></span> Degradation Precursor</span>
+            <span><span class="dot dot-red"></span> Critical / Imminent Outage</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-Time AI Inference & Root Cause Analysis (RCA) -->
+      <div class="panel rca-panel">
+        <div class="panel-header">
+          <h3>AI Predictive Diagnostic & RCA</h3>
+          <span class="panel-tag" id="selected-node-tag">CR-01</span>
+        </div>
+        <div class="panel-body">
+          <div class="rca-summary-box">
+            <div class="gauge-container">
+              <div class="gauge-meter">
+                <div class="gauge-fill" id="gauge-fill" style="width: 5%;"></div>
+              </div>
+              <div class="gauge-labels">
+                <span>0% Safe</span>
+                <span class="gauge-value" id="gauge-text">5.0% Risk</span>
+                <span>100% Critical</span>
+              </div>
+            </div>
+            <div class="prediction-taxonomy">
+              <div>Predicted State: <strong id="pred-state" class="text-green">Normal Operation</strong></div>
+              <div>Estimated Lead Time: <strong id="pred-lead-time">N/A</strong></div>
+            </div>
+          </div>
+
+          <div class="rca-details">
+            <h4>Root Cause Diagnostic (Explainable AI)</h4>
+            <p id="rca-diagnosis-text" class="diagnosis-text">
+              All multi-modal metrics (syslog severity, optical power, temperature, and queue depth) remain inside normal baseline envelopes.
+            </p>
+            <div id="rca-signals-list" class="signals-list">
+              <!-- Abnormal signals injected dynamically -->
+            </div>
+          </div>
+
+          <div class="prescriptive-box">
+            <h4>Prescriptive NOC Runbook & Recommended Action</h4>
+            <div class="runbook-header">
+              <span class="badge" id="runbook-priority">P4 - INFORMATIONAL</span>
+              <span id="runbook-sla">SLA: Continuous Monitoring</span>
+            </div>
+            <ul id="runbook-actions" class="runbook-list">
+              <li>Routine preventive telemetry polling active.</li>
+            </ul>
+            <div class="cli-box">
+              <div class="cli-title">Suggested CLI Mitigation Command:</div>
+              <pre id="runbook-cli"># All parameters nominal.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 3: Live Telemetry Charts -->
+    <section class="panel-row">
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3>Chassis Temperature & Cooling Efficiency</h3>
+          <span class="metric-legend">Thermal Sensor (°C) vs Fan (RPM)</span>
+        </div>
+        <div class="panel-body chart-wrapper">
+          <canvas id="chart-thermal"></canvas>
+        </div>
+      </div>
+
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3>Optical Transceiver Rx Power & CRC Errors</h3>
+          <span class="metric-legend">Rx Power (dBm) vs FCS/CRC Drops</span>
+        </div>
+        <div class="panel-body chart-wrapper">
+          <canvas id="chart-optical"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 4: Memory, CPU, and Live Syslogs -->
+    <section class="panel-row">
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <h3>Buffer Queue Depth & Latency Jitter</h3>
+          <span class="metric-legend">Queue (%) vs Latency (ms)</span>
+        </div>
+        <div class="panel-body chart-wrapper">
+          <canvas id="chart-buffer"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Syslog Stream -->
+      <div class="panel syslog-panel">
+        <div class="panel-header">
+          <h3>Live Syslog & Event Stream</h3>
+          <span class="panel-tag">RFC 5424 Parsed</span>
+        </div>
+        <div class="panel-body">
+          <div class="syslog-feed" id="syslog-feed">
+            <!-- Dynamic log rows -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 5: AI Evaluation Benchmark / Confusion Matrix -->
+    <section class="panel-row">
+      <div class="panel full-width-panel">
+        <div class="panel-header">
+          <h3>AI Model Validation & Performance Benchmarks</h3>
+          <span class="panel-tag">Test Dataset Metrics</span>
+        </div>
+        <div class="panel-body metrics-grid-layout">
+          <div class="metrics-table-wrapper">
+            <table class="table-metrics" id="table-benchmark">
+              <thead>
+                <tr>
+                  <th>Model Architecture</th>
+                  <th>Accuracy</th>
+                  <th>Precision</th>
+                  <th>Recall (Detection)</th>
+                  <th>F1-Score</th>
+                  <th>ROC-AUC</th>
+                  <th>False Alarm Rate (FPR)</th>
+                </tr>
+              </thead>
+              <tbody id="metrics-table-body">
+                <tr>
+                  <td><strong>Random Forest (Ensemble)</strong></td>
+                  <td><span class="badge-green">98.5%</span></td>
+                  <td>97.8%</td>
+                  <td>99.1%</td>
+                  <td><strong>0.984</strong></td>
+                  <td><strong>0.996</strong></td>
+                  <td>0.6%</td>
+                </tr>
+                <tr>
+                  <td>Hist Gradient Boosting</td>
+                  <td>98.2%</td>
+                  <td>97.1%</td>
+                  <td>98.7%</td>
+                  <td>0.979</td>
+                  <td>0.993</td>
+                  <td>0.8%</td>
+                </tr>
+                <tr>
+                  <td>Regularized Logistic Regression</td>
+                  <td>92.4%</td>
+                  <td>89.6%</td>
+                  <td>91.2%</td>
+                  <td>0.904</td>
+                  <td>0.941</td>
+                  <td>3.4%</td>
+                </tr>
+                <tr>
+                  <td>Isolation Forest (Unsupervised)</td>
+                  <td>94.1%</td>
+                  <td>91.0%</td>
+                  <td>93.5%</td>
+                  <td>0.922</td>
+                  <td>0.952</td>
+                  <td>2.8%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cm-display" id="cm-display-container">
+            <h4>Confusion Matrix</h4>
+            <div id="cm-svg-container" class="cm-svg-box">
+              <!-- Injected SVG confusion matrix -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Fault Injection Modal -->
+  <div id="injection-modal" class="modal-backdrop hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Simulate Equipment Degradation Scenario</h3>
+        <button class="modal-close" onclick="closeInjectionModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Select a target network device and a progressive fault degradation profile to evaluate the AI's predictive response in real-time.
+        </p>
+        <div class="form-group">
+          <label for="inject-node-select">Target Equipment Node:</label>
+          <select id="inject-node-select" class="form-control">
+            <option value="CR-01">CR-01 (Cisco NCS-5500 Core Router)</option>
+            <option value="CR-02">CR-02 (Cisco NCS-5500 Core Router)</option>
+            <option value="SPINE-01">SPINE-01 (Arista 7050X3 Spine Switch)</option>
+            <option value="SPINE-02">SPINE-02 (Arista 7050X3 Spine Switch)</option>
+            <option value="LEAF-01">LEAF-01 (Juniper QFX5120 Leaf Switch)</option>
+            <option value="LEAF-02">LEAF-02 (Juniper QFX5120 Leaf Switch)</option>
+            <option value="EDGE-GW-01">EDGE-GW-01 (Fortinet Edge Gateway)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="inject-fault-select">Degradation / Failure Scenario:</label>
+          <select id="inject-fault-select" class="form-control">
+            <option value="Thermal_Runaway">Thermal Runaway (Fan Failure & ASIC Overheat)</option>
+            <option value="Optical_Transceiver_Degradation">Optical Transceiver Degradation (Rx Power Attenuation & CRC errors)</option>
+            <option value="Memory_Exhaustion">Memory Exhaustion (Buffer/State Leak & Malloc Failure)</option>
+            <option value="Buffer_Congestion">Buffer Congestion (Queue Saturation & Microburst Packet Drops)</option>
+            <option value="BGP_Routing_Flap">BGP Routing Flap (Route Churn & Hold-Timer Outage)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="inject-duration-input">Progression Steps (cycles):</label>
+          <input type="number" id="inject-duration-input" class="form-control" value="30" min="10" max="100">
+          <small class="form-help">30 steps corresponds to ~15 minutes of simulated telemetry.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeInjectionModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="executeFaultInjection()">Trigger Fault Degradation</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
